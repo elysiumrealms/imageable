@@ -1,0 +1,38 @@
+{
+    "name": "elysiumrealms/imageable",
+    "description": "Imageable Eloquent Model Extension",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["elysiumrealms", "imageable", "eloquent", "model", "extension"],
+    "homepage": "https://github.com/elysiumrealms/imageable",
+    "authors": [
+        {
+            "name": "deflinhec"
+        }
+    ],
+    "require": {
+        "php": "^7.3|^8.0",
+        "intervention/image": "^2.7",
+        "laravel/framework": "^8.75"
+    },
+    "autoload": {
+        "psr-4": {
+            "Elysiumrealms\\Imageable\\": "src/"
+        },
+        "files": [
+            "src/Support/helpers.php"
+        ]
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Elysiumrealms\\Imageable\\ServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
