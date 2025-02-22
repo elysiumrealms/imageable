@@ -114,7 +114,7 @@ class Imageable extends Model
         if ($this->width == $width && $this->height == $height)
             return $this;
 
-        if ($image = $this->images()
+        if ($image = $this->images
             ->where('width', $width)
             ->where('height', $height)
             ->first()
@@ -126,12 +126,14 @@ class Imageable extends Model
         $image = Image::make($disk->get($this->path))
             ->resize($width, $height);
 
-        return $this->images()->create([
-            'path' => $image,
-            'width' => $width,
-            'height' => $height,
-            'mime_type' => $this->mime_type,
-            'collection' => $this->collection,
-        ]);
+        return $this->images()->firstOrCreate(
+            [
+                'width' => $width,
+                'height' => $height,
+                'mime_type' => $this->mime_type,
+                'collection' => $this->collection,
+            ],
+            ['path' => $image]
+        );
     }
 }

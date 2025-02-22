@@ -30,6 +30,14 @@ class ImageableController
 
         $images = $user->images()
             ->when(
+                $request->input('height') || $request->input('width'),
+                fn($query) => $query
+                    ->with('images', function ($query) use ($request) {
+                        $query->where('height', $request->input('height'))
+                            ->where('width', $request->input('width'));
+                    })
+            )
+            ->when(
                 $collection,
                 fn($query, $value)
                 => $query->where(
@@ -51,40 +59,6 @@ class ImageableController
             )->toImageable());
 
         return response()->json($images);
-    }
-
-    /**
-     * Resize image
-     *
-     * @param Request $request
-     * @param Imageable $imageable
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function resize(Request $request, Imageable $imageable)
-    {
-        $request->validate([
-            'width' => 'required|integer',
-            'height' => 'required|integer',
-        ]);
-
-        $user = $request->user();
-
-        if (!$user instanceof Contracts\Imageable) {
-            throw new Exceptions\ImageableException(
-                'Unsupported imageable model.',
-            );
-        }
-
-        $image = $user->images()
-            ->where('hash', $imageable->hash)
-            ->first();
-
-        return response()->json(
-            $image->resize(
-                $request->input('width'),
-                $request->input('height')
-            )->toImageable()
-        );
     }
 
     /**
