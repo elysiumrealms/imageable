@@ -83,7 +83,7 @@ trait ImageableTrait
 
             $url = call_user_func_array(
                 [$disk, 'url'],
-                [$this->attributes[$key]]
+                [ltrim($this->attributes[$key], '/')]
             );
 
             $this->attributes[$key] = str_replace(
