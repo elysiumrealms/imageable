@@ -90,7 +90,7 @@ class ImageableController
                 $request->input('w'),
                 $request->input('h')
             )->path)
-        )->response();
+        )->response()->header('Cache-Control', config('imageable.proxy.cache'));
     }
 
     /**

@@ -53,6 +53,16 @@ return [
         |
         */
         'url' => env('IMAGEABLE_PROXY_URL', env('APP_URL')),
+
+        /*
+        | --------------------------------------------------------------------------
+        | Imageable Proxy Cache
+        | --------------------------------------------------------------------------
+        |
+        | The cache to use for the proxy.
+        |
+        */
+        'cache' => env('IMAGEABLE_PROXY_CACHE', 'public, max-age=3600'),
     ],
 
     /*
