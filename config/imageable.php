@@ -62,7 +62,7 @@ return [
         | The cache to use for the proxy.
         |
         */
-        'cache' => env('IMAGEABLE_PROXY_CACHE', 'public, max-age=3600'),
+        'cache' => env('IMAGEABLE_PROXY_CACHE', 3600),
     ],
 
     /*

@@ -86,11 +86,24 @@ class ImageableController
         $disk = Storage::disk(config('imageable.disk'));
 
         return Image::make(
-            $disk->get($image->resize(
+            $content = $disk->get($image->resize(
                 $request->input('w'),
                 $request->input('h')
             )->path)
-        )->response()->header('Cache-Control', config('imageable.proxy.cache'));
+        )->response()
+            ->header(
+                'Cache-Control',
+                'public, max-age=' . config('imageable.proxy.cache')
+            )
+            ->header('Expires', gmdate(
+                'D, d M Y H:i:s \G\M\T',
+                time() + config('imageable.proxy.cache')
+            ))
+            ->header('Last-Modified', gmdate(
+                'D, d M Y H:i:s \G\M\T',
+                $image->created_at->timestamp
+            ))
+            ->header('Etag', "\"" . md5($content) . "\"");
     }
 
     /**
