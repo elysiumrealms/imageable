@@ -107,10 +107,12 @@ class Imageable extends Model
      *
      * @param int|null $width
      * @param int|null $height
-     * @return void
+     * @return $this
      */
     public function resize($width, $height)
     {
+        if (is_null($width) && is_null($height))
+            return $this;
         if ($this->width == $width && $this->height == $height)
             return $this;
 

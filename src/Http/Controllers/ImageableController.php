@@ -7,6 +7,7 @@ use Elysiumrealms\Imageable\Exceptions;
 use Elysiumrealms\Imageable\Models\Imageable;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
 
 class ImageableController
@@ -15,10 +16,9 @@ class ImageableController
      * Get images
      *
      * @param Request $request
-     * @param string $collection
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index(Request $request, $collection)
+    public function index(Request $request)
     {
         $user = $request->user();
 
@@ -28,17 +28,17 @@ class ImageableController
             );
         }
 
-        $images = $user->images()
+        $paginator = $user->images()
             ->when(
-                $request->input('height') || $request->input('width'),
+                $request->input('h') || $request->input('w'),
                 fn($query) => $query
                     ->with('images', function ($query) use ($request) {
-                        $query->where('height', $request->input('height'))
-                            ->where('width', $request->input('width'));
+                        $query->where('height', $request->input('h'))
+                            ->where('width', $request->input('w'));
                     })
             )
             ->when(
-                $collection,
+                $request->input('collection'),
                 fn($query, $value)
                 => $query->where(
                     'collection',
@@ -52,13 +52,45 @@ class ImageableController
                 $request->input('page', 1)
             );
 
-        $images->getCollection()
-            ->transform(fn($image) => $image->resize(
-                $request->input('width'),
-                $request->input('height')
-            )->toImageable());
+        $paginator->getCollection()->transform(
+            fn($image) => $image->resize(
+                $request->input('w'),
+                $request->input('h')
+            )->toImageable()
+        );
 
-        return response()->json($images);
+        return response()->json($paginator);
+    }
+
+    /**
+     * Get the image
+     *
+     * @param Request $request
+     * @param string $image
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function show(Request $request, $image)
+    {
+        /** @var \Elysiumrealms\Imageable\Models\Imageable $image */
+        $image = Imageable::query()
+            ->when(
+                $request->input('h') || $request->input('w'),
+                fn($query) => $query
+                    ->with('images', function ($query) use ($request) {
+                        $query->where('height', $request->input('h'))
+                            ->where('width', $request->input('w'));
+                    })
+            )
+            ->findOrFail('/' . config('imageable.directory') . '/' . $image);
+
+        $disk = Storage::disk(config('imageable.disk'));
+
+        return Image::make(
+            $disk->get($image->resize(
+                $request->input('w'),
+                $request->input('h')
+            )->path)
+        )->response();
     }
 
     /**
@@ -108,14 +140,12 @@ class ImageableController
      * Delete images
      *
      * @param Request $request
+     * @param string|null $image
      * @return \Illuminate\Http\JsonResponse
      */
-    public function destroy(Request $request)
+    public function destroy(Request $request, $image = null)
     {
-        $request->validate([
-            'images' => 'required|array',
-            'images.*' => 'required|string',
-        ]);
+        $images = $request->input('images', [$image]);
 
         $user = $request->user();
 

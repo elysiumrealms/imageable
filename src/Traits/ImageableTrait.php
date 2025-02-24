@@ -40,7 +40,7 @@ trait ImageableTrait
                             $model->{$key} = "/${dir}/" .
                                 Str::random(40) .
                                 '.' . last(explode('/', $value->mime())),
-                            (string)$value
+                            $value->encode()
                         );
                         break;
                     default:

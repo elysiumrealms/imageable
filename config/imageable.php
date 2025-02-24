@@ -25,6 +25,37 @@ return [
     'directory' => 'imageable',
 
     /*
+    | --------------------------------------------------------------------------
+    | Imageable Proxy Configuration
+    | --------------------------------------------------------------------------
+    |
+    | The proxy configuration to use for the images.
+    |
+    */
+    'proxy' => [
+        /*
+        | --------------------------------------------------------------------------
+        | Imageable Proxy Enabled
+        | --------------------------------------------------------------------------
+        |
+        | Serve the images from specific url.
+        |
+        */
+        'enabled' => env('IMAGEABLE_PROXY_ENABLED', false),
+
+        /*
+        | --------------------------------------------------------------------------
+        | Imageable Proxy URL
+        | --------------------------------------------------------------------------
+        |
+        | The URL to use for the proxy. When Url is default to APP_URL, the images
+        | will be served from the same url as the application.
+        |
+        */
+        'url' => env('IMAGEABLE_PROXY_URL', env('APP_URL')),
+    ],
+
+    /*
      | --------------------------------------------------------------------------
      | Imageable Route
      | --------------------------------------------------------------------------
