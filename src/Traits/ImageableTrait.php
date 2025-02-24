@@ -40,7 +40,7 @@ trait ImageableTrait
                             $model->{$key} = "/${dir}/" .
                                 Str::random(40) .
                                 '.' . last(explode('/', $value->mime())),
-                            (string)$value
+                            $value->encode()
                         );
                         break;
                     default:
@@ -83,14 +83,10 @@ trait ImageableTrait
 
             $url = call_user_func_array(
                 [$disk, 'url'],
-                [$this->attributes[$key]]
+                [ltrim($this->attributes[$key], '/')]
             );
 
-            $this->attributes[$key] = str_replace(
-                preg_replace('/^https?:\/\//', '', env('APP_URL')),
-                config('imageable.host'),
-                $url
-            );
+            $this->attributes[$key] = app('imageable')->resolve($url);
         }
 
         return new Fluent($this->attributesToArray(), $this->relations);
