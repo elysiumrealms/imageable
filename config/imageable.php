@@ -26,18 +26,6 @@ return [
 
     /*
      | --------------------------------------------------------------------------
-     | Imageable Host
-     | --------------------------------------------------------------------------
-     |
-     | The host to use for the images, only used when the disk stores files on
-     | local file system. This value will be overridden by request header
-     | `origin` or `host` if current process is running in a web server.
-     |
-     */
-    'host' => env('IMAGEABLE_HOST', env('APP_URL')),
-
-    /*
-     | --------------------------------------------------------------------------
      | Imageable Route
      | --------------------------------------------------------------------------
      |

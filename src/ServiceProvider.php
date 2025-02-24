@@ -2,6 +2,8 @@
 
 namespace Elysiumrealms\Imageable;
 
+use Elysiumrealms\Imageable\ImageableService;
+
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
 {
     /**
@@ -18,15 +20,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
 
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-
-        config(['imageable.host' => call_user_func(function () {
-            $request = request();
-            $host = $request->header('origin');
-            $host = rtrim(parse_url($host, PHP_URL_HOST)
-                . ':' . parse_url($host, PHP_URL_PORT), ':');
-            $host = empty($host) ? $request->header('host') : $host;
-            return empty($host) ? config('imageable.host') : $host;
-        })]);
     }
 
     /**
@@ -39,6 +32,11 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $this->mergeConfigFrom(
             __DIR__ . '/../config/imageable.php',
             'imageable'
+        );
+
+        $this->app->singleton(
+            'imageable',
+            fn($app) => new ImageableService($app)
         );
     }
 

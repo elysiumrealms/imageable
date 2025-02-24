@@ -86,11 +86,7 @@ trait ImageableTrait
                 [ltrim($this->attributes[$key], '/')]
             );
 
-            $this->attributes[$key] = str_replace(
-                preg_replace('/^https?:\/\//', '', env('APP_URL')),
-                config('imageable.host'),
-                $url
-            );
+            $this->attributes[$key] = app('imageable')->resolve($url);
         }
 
         return new Fluent($this->attributesToArray(), $this->relations);

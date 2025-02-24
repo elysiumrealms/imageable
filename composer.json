@@ -30,7 +30,10 @@
         "laravel": {
             "providers": [
                 "Elysiumrealms\\Imageable\\ServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "Imageable": "Elysiumrealms\\Imageable\\Facades\\Imageable"
+            }
         }
     },
     "config": {
