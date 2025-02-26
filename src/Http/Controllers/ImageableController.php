@@ -72,7 +72,7 @@ class ImageableController
     public function show(Request $request, $image)
     {
         /** @var \Elysiumrealms\Imageable\Models\Imageable $image */
-        $image = Imageable::query()
+        $image = Imageable::withTrashed()
             ->when(
                 $request->input('h') || $request->input('w'),
                 fn($query) => $query
@@ -83,8 +83,9 @@ class ImageableController
             )
             ->findOrFail('/' . config('imageable.directory') . '/' . $image);
 
-        $disk = Storage::disk(config('imageable.disk'));
+        if ($image->trashed()) $image->restore();
 
+        $disk = Storage::disk(config('imageable.disk'));
         return Image::make(
             $content = $disk->get($image->resize(
                 $request->input('w'),
@@ -133,15 +134,19 @@ class ImageableController
 
                 $image = Image::make($content = $file->get());
 
-                $image = $user->images()->firstOrCreate([
-                    'hash' => md5($content),
-                    'width' => $image->width(),
-                    'height' => $image->height(),
-                    'collection' => $collection,
-                    'mime_type' => $file->getMimeType(),
-                ], [
-                    'path' => $file,
-                ]);
+                /** @var \Elysiumrealms\Imageable\Models\Imageable $image */
+                $image = $user->images()->withTrashed()
+                    ->firstOrCreate([
+                        'hash' => md5($content),
+                        'width' => $image->width(),
+                        'height' => $image->height(),
+                        'collection' => $collection,
+                        'mime_type' => $file->getMimeType(),
+                    ], [
+                        'path' => $file,
+                    ]);
+
+                if ($image->trashed()) $image->restore();
 
                 return $image->toImageable();
             });

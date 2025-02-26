@@ -53,6 +53,14 @@ class Imageable extends Model
                     );
             }
         });
+
+        static::deleted(function ($model) {
+            $model->images()->delete();
+        });
+
+        static::restored(function ($model) {
+            $model->images()->restore();
+        });
     }
 
     /**
