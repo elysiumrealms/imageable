@@ -4,6 +4,7 @@ namespace Elysiumrealms\Imageable\Console\Commands;
 
 use Elysiumrealms\Imageable\Models\Imageable;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
 
 class PruneCommand extends Command
 {
@@ -13,8 +14,7 @@ class PruneCommand extends Command
      * @var string
      */
     protected $signature = 'imageable:prune
-        {--days : The number of days to prune the images}
-        {--uploaded : Prune all the uploaded images}
+        {--days= : The number of days to keep the images}
     ';
 
     /**
@@ -22,7 +22,7 @@ class PruneCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Purne the images';
+    protected $description = 'Purge the deleted images';
 
     /**
      * Execute the console command.
@@ -31,12 +31,12 @@ class PruneCommand extends Command
     {
         $this->info('Pruning the images');
 
-        $query = Imageable::query()
-            ->when(!$this->option('uploaded'), fn($query)
-            => $query->whereNull('owner_id'))
-            ->when($this->option('days'), fn($query)
-            => $query->where('created_at', '<', now()
-                ->subDays($this->option('days'))));
+        $query = Imageable::withTrashed()
+            ->where(
+                'deleted_at',
+                '<',
+                now()->subDays($this->option('days') ?? 0)
+            );
 
         $bar = $this->output->createProgressBar(
             $count = $query->count()
@@ -46,13 +46,21 @@ class PruneCommand extends Command
 
         $query->chunk(100, function ($images) use ($bar) {
             foreach ($images as $image) {
-                $image->delete();
-                $bar->advance();
+                $image->forceDelete();
             }
+            collect($images)
+                ->groupBy('disk')
+                ->each(function ($images, $disk) {
+                    Storage::disk($disk)->delete(
+                        collect($images)->pluck('path')
+                            ->toArray()
+                    );
+                });
+            $bar->advance($images->count());
         });
 
         $bar->finish();
 
-        $this->info("Pruned {$count} images");
+        $this->info("Purged {$count} images");
     }
 }

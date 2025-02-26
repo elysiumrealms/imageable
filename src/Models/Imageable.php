@@ -2,18 +2,23 @@
 
 namespace Elysiumrealms\Imageable\Models;
 
-use Elysiumrealms\Imageable\Traits;
+use Elysiumrealms\Imageable\Exceptions;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\Facades\Image;
+use Illuminate\Support\Fluent;
+use Intervention\Image\Facades\Image as ImageFacade;
+use Illuminate\Support\Str;
+use Intervention\Image\Image;
 
 class Imageable extends Model
 {
     use HasFactory;
-    use Traits\ImageableTrait;
+    use SoftDeletes;
 
     protected $primaryKey = 'path';
     public $incrementing = false;
@@ -22,8 +27,31 @@ class Imageable extends Model
     {
         parent::boot();
 
-        static::deleted(function ($model) {
-            $model->images()->delete();
+        static::creating(function ($model) {
+            $dir = config('imageable.directory');
+            $disk = Storage::disk(config('imageable.disk'));
+            $value = $model->attributes['path'];
+            switch (true) {
+                case $value instanceof UploadedFile:
+                    $disk->put(
+                        $model->path = "/${dir}/" .
+                            $value->hashName(),
+                        $value->get()
+                    );
+                    break;
+                case $value instanceof Image:
+                    $disk->put(
+                        $model->path = "/${dir}/" .
+                            Str::random(40) .
+                            '.' . last(explode('/', $value->mime())),
+                        $value->encode()
+                    );
+                    break;
+                default:
+                    throw new Exceptions\ImageableException(
+                        'Unsupported imageable type.'
+                    );
+            }
         });
     }
 
@@ -64,15 +92,6 @@ class Imageable extends Model
         'height' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-    ];
-
-    /**
-     * The attributes that are imageable.
-     *
-     * @var array
-     */
-    protected $imageable = [
-        'path',
     ];
 
     /**
@@ -125,7 +144,7 @@ class Imageable extends Model
 
         $disk = Storage::disk(config('imageable.disk'));
 
-        $image = Image::make($disk->get($this->path))
+        $image = ImageFacade::make($disk->get($this->path))
             ->resize($width, $height);
 
         return $this->images()->firstOrCreate(
@@ -137,5 +156,25 @@ class Imageable extends Model
             ],
             ['path' => $image]
         );
+    }
+
+    /**
+     * Convert the model to a Fluent object.
+     *
+     * @param int|null $width
+     * @param int|null $height
+     * @return \Illuminate\Support\Fluent
+     */
+    public function toImageable()
+    {
+        $disk = Storage::disk(config('imageable.disk'));
+        $url = call_user_func_array(
+            [$disk, 'url'],
+            [ltrim($this->attributes['path'], '/')]
+        );
+
+        $this->attributes['path'] = app('imageable')->resolve($url);
+
+        return new Fluent($this->attributesToArray(), $this->relations);
     }
 }

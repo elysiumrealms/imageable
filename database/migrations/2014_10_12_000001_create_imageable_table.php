@@ -31,6 +31,7 @@ class CreateImageableTable extends Migration
                 $table->integer('height')
                     ->nullable();
                 $table->nullableMorphs('owner');
+                $table->softDeletes();
                 $table->timestamps();
             }
         );

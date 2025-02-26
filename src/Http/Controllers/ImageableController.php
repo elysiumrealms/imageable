@@ -172,11 +172,11 @@ class ImageableController
         $count = $user->images()
             ->whereIn(
                 'path',
-                collect(
-                    $request->input('images')
-                )->map(fn($image) => "/{$dir}/" . basename($image))
+                collect($images)
+                    ->map(fn($image) => "/{$dir}/" . basename($image))
+                    ->toArray()
             )
-            ->get()->each->delete();
+            ->delete();
 
         return response()->json(['deleted' => $count]);
     }
