@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Fluent;
 use Intervention\Image\Facades\Image as ImageFacade;
 use Illuminate\Support\Str;
 use Intervention\Image\Image;
@@ -20,7 +19,7 @@ class Imageable extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected $primaryKey = 'path';
+    protected $primaryKey = 'name';
     public $incrementing = false;
 
     public static function boot()
@@ -30,19 +29,19 @@ class Imageable extends Model
         static::creating(function ($model) {
             $dir = config('imageable.directory');
             $disk = Storage::disk(config('imageable.disk'));
-            $value = $model->attributes['path'];
+            $value = $model->attributes['name'];
             switch (true) {
                 case $value instanceof UploadedFile:
                     $disk->put(
-                        $model->path = "/${dir}/" .
-                            $value->hashName(),
+                        "/${dir}/" .
+                            $model->name = $value->hashName(),
                         $value->get()
                     );
                     break;
                 case $value instanceof Image:
                     $disk->put(
-                        $model->path = "/${dir}/" .
-                            Str::random(40) .
+                        "/${dir}/" .
+                            $model->name = Str::random(40) .
                             '.' . last(explode('/', $value->mime())),
                         $value->encode()
                     );
@@ -52,6 +51,7 @@ class Imageable extends Model
                         'Unsupported imageable type.'
                     );
             }
+            unset($model->attributes['file']);
         });
 
         static::deleted(function ($model) {
@@ -69,7 +69,7 @@ class Imageable extends Model
      * @var array
      */
     protected $fillable = [
-        'path',
+        'name',
         'hash',
         'width',
         'height',
@@ -101,6 +101,13 @@ class Imageable extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * Get the attributes that should be appended.
+     *
+     * @var array
+     */
+    protected $appends = ['path', 'url'];
 
     /**
      * 序列化日期
@@ -162,27 +169,44 @@ class Imageable extends Model
                 'mime_type' => $this->mime_type,
                 'collection' => $this->collection,
             ],
-            ['path' => $image]
+            ['name' => $image]
         );
     }
 
     /**
-     * Convert the model to a Fluent object.
+     * Get the path of the image.
      *
-     * @param int|null $width
-     * @param int|null $height
-     * @return \Illuminate\Support\Fluent
+     * @return string
      */
-    public function toImageable()
+    public function getPathAttribute()
+    {
+        return '/' . config('imageable.directory') . '/' . $this->name;
+    }
+
+    /**
+     * Get the basename of the image.
+     *
+     * @return string
+     */
+    public function getBasenameAttribute()
+    {
+        return basename($this->path);
+    }
+
+    /**
+     * Get the url of the image.
+     *
+     * @return string
+     */
+    public function getUrlAttribute()
     {
         $disk = Storage::disk(config('imageable.disk'));
+
         $url = call_user_func_array(
             [$disk, 'url'],
-            [ltrim($this->attributes['path'], '/')]
+            [ltrim($this->path, '/')]
         );
 
-        $this->attributes['path'] = app('imageable')->resolve($url);
-
-        return new Fluent($this->attributesToArray(), $this->relations);
+        return app('imageable')->resolve($url);
     }
 }

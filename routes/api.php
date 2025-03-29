@@ -32,6 +32,9 @@ Route::group([
     $router->delete('/', 'ImageableController@destroy')
         ->name('destroy');
 
+    $router->post('/', 'ImageableController@upload')
+        ->name('upload');
+
     $router->post('/{collection}', 'ImageableController@upload')
         ->name('upload');
 

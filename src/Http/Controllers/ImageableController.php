@@ -56,7 +56,7 @@ class ImageableController
             fn($image) => $image->resize(
                 $request->input('w'),
                 $request->input('h')
-            )->toImageable()
+            )
         );
 
         return response()->json($paginator);
@@ -81,7 +81,7 @@ class ImageableController
                             ->where('width', $request->input('w'));
                     })
             )
-            ->findOrFail('/' . config('imageable.directory') . '/' . $image);
+            ->findOrFail($image);
 
         if ($image->trashed()) $image->restore();
 
@@ -114,11 +114,12 @@ class ImageableController
      * @param string|null $collection
      * @return \Illuminate\Http\JsonResponse
      */
-    public function upload(Request $request, $collection)
+    public function upload(Request $request, $collection = 'temporary')
     {
         $request->validate([
-            'images' => 'required|array',
-            'images.*' => 'required|image',
+            'images' => 'required_without:image|array',
+            'images.*' => 'required_without:image|image',
+            'image' => 'required_without:images|image',
         ]);
 
         $user = $request->user();
@@ -130,6 +131,9 @@ class ImageableController
         }
 
         $images = collect($request->file('images'))
+            ->when($request->file('image'), function ($collection, $image) {
+                $collection->push($image);
+            })
             ->map(function (UploadedFile $file) use ($user, $collection) {
 
                 $image = Image::make($content = $file->get());
@@ -143,12 +147,12 @@ class ImageableController
                         'collection' => $collection,
                         'mime_type' => $file->getMimeType(),
                     ], [
-                        'path' => $file,
+                        'name' => $file,
                     ]);
 
                 if ($image->trashed()) $image->restore();
 
-                return $image->toImageable();
+                return $image;
             });
 
         return response()->json($images->toArray(), 201);
@@ -173,14 +177,8 @@ class ImageableController
             );
         }
 
-        $dir = config('imageable.directory');
         $count = $user->images()
-            ->whereIn(
-                'path',
-                collect($images)
-                    ->map(fn($image) => "/{$dir}/" . basename($image))
-                    ->toArray()
-            )
+            ->whereIn('name', $images)
             ->delete();
 
         return response()->json(['deleted' => $count]);

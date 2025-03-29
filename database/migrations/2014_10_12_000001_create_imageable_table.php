@@ -16,7 +16,7 @@ class CreateImageableTable extends Migration
         Schema::create(
             'imageables',
             function (Blueprint $table) {
-                $table->string('path', 64)
+                $table->string('name', 64)
                     ->primary();
                 $table->string('hash', 32)
                     ->index();
